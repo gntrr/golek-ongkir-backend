@@ -137,17 +137,21 @@ Body fields:
 - origin (int, required): ID kecamatan asal
 - destination (int, required): ID kecamatan tujuan
 - weight (int, required): berat dalam gram, min:1
-- couriers (string, required): daftar kurir dipisah koma, contoh: "jne,pos,tiki"
+- courier (string, required): daftar kurir dipisah tanda titik dua `:` sesuai upstream. Contoh: `jne:pos:jnt`
 
 Contoh (JSON):
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/cost" \
 	-H "Content-Type: application/json" \
-	-d "{\n    \"origin\": 5473,\n    \"destination\": 6302,\n    \"weight\": 1200,\n    \"couriers\": \"jne,pos,tiki\"\n  }"
+	-d "{\n    \"origin\": 5473,\n    \"destination\": 6302,\n+    \"weight\": 1200,\n+    \"courier\": \"jne:pos:jnt\"\n  }"
 ```
 
 Caching: kombinasi parameter di-cache 10 menit.
+
+#### Troubleshooting
+
+- 422: `courier cannot be blank` — pastikan field dikirim sebagai `courier` dan nilainya tidak kosong. API menerima pemisah koma/semicolon/spasi dan akan menormalkan menjadi format `:`. Contoh valid: `jne:pos:jnt` atau `"jne,pos,jnt"`.
 
 ### POST /track
 
