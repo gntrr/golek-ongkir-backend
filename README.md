@@ -1,61 +1,195 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+## Golek Ongkir Backend — Laravel API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API sederhana berbasis Laravel untuk pencarian lokasi (provinsi, kota, kecamatan), perhitungan ongkos kirim domestik, dan pelacakan resi. API ini menjadi adaptor ke layanan pihak ketiga bergaya RajaOngkir (default: Komerce) dan menambahkan caching serta validasi.
 
-## About Laravel
+—
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tech stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP 8.2+
+- Laravel 12.x
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Fitur
 
-## Learning Laravel
+- Endpoint publik tanpa autentikasi untuk: provinces, cities, districts, search, cost, track
+- Rate limiting bawaan: 60 request/menit per IP
+- Caching hasil (provinces/cities/districts/search/cost) untuk mengurangi hit ke upstream
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Persiapan & jalankan lokal
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+1) Salin env dan isi variabel yang diperlukan
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bat
+copy .env.example .env
+```
 
-## Laravel Sponsors
+2) Install dependency dan generate APP_KEY
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bat
+composer install
+php artisan key:generate
+```
 
-### Premium Partners
+3) Konfigurasi .env (lihat bagian Konfigurasi) lalu jalankan server
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bat
+php artisan serve
+```
 
-## Contributing
+API akan tersedia di http://127.0.0.1:8000 (endpoint berada di prefix /api).
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Catatan: Proyek menyertakan SQLite untuk kebutuhan dasar Laravel, tetapi modul API ini tidak bergantung pada database.
 
-## Code of Conduct
+## Konfigurasi
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Setel variabel berikut di file `.env`:
 
-## Security Vulnerabilities
+- RAJAONGKIR_KEY: kunci API provider upstream (wajib)
+- RAJAONGKIR_BASE: base URL upstream (opsional, default `https://rajaongkir.komerce.id/api/v1`)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Opsional terkait performa:
 
-## License
+- CACHE_DRIVER=file|redis|… (default file). Data tertentu di-cache: provinces (1 hari), cities (1 hari), districts (1 hari), search (30 menit), cost (10 menit).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Kontrak respons
+
+Semua endpoint mengembalikan struktur standar dari upstream yang dibungkus:
+
+```json
+{
+	"error": false,
+	"data": { /* payload upstream */ }
+}
+```
+
+Jika upstream gagal, bentuknya:
+
+```json
+{
+	"error": true,
+	"status": 4xx/5xx,
+	"message": "penjelasan kesalahan dari upstream"
+}
+```
+
+Kesalahan validasi dari API ini mengikuti standar Laravel (HTTP 422) dengan payload `errors` per field.
+
+## Rate limiting
+
+Semua rute berada di belakang throttle `60,1` (maksimal 60 request per menit per IP). Jika terlampaui akan menerima HTTP 429.
+
+## API Reference
+
+Base URL lokal: `http://127.0.0.1:8000/api`
+
+### GET /provinces
+
+Mengambil daftar provinsi.
+
+Contoh:
+
+```bash
+curl -X GET "http://127.0.0.1:8000/api/provinces"
+```
+
+### GET /cities?province={id}
+
+Mengambil daftar kota berdasarkan `province` (integer, required).
+
+Contoh:
+
+```bash
+curl -G "http://127.0.0.1:8000/api/cities" --data-urlencode "province=5"
+```
+
+Validasi: `province` wajib, integer.
+
+### GET /districts?city={id}
+
+Mengambil daftar kecamatan berdasarkan `city` (integer, required).
+
+Contoh:
+
+```bash
+curl -G "http://127.0.0.1:8000/api/districts" --data-urlencode "city=501"
+```
+
+Validasi: `city` wajib, integer.
+
+### GET /search?search={term}
+
+Pencarian langsung tujuan domestik. Parameter query dapat memakai `search`, `keyword`, atau `q` (akan dipetakan ke `search`). Minimal 2 karakter.
+
+Contoh:
+
+```bash
+curl -G "http://127.0.0.1:8000/api/search" --data-urlencode "q=jakarta selatan"
+```
+
+Validasi: `search` wajib, string, min 2.
+
+### POST /cost
+
+Hitung ongkir domestik. Menerima JSON atau form-encoded body.
+
+Body fields:
+
+- origin (int, required): ID kecamatan asal
+- destination (int, required): ID kecamatan tujuan
+- weight (int, required): berat dalam gram, min:1
+- couriers (string, required): daftar kurir dipisah koma, contoh: "jne,pos,tiki"
+
+Contoh (JSON):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/cost" \
+	-H "Content-Type: application/json" \
+	-d "{\n    \"origin\": 5473,\n    \"destination\": 6302,\n    \"weight\": 1200,\n    \"couriers\": \"jne,pos,tiki\"\n  }"
+```
+
+Caching: kombinasi parameter di-cache 10 menit.
+
+### POST /track
+
+Lacak resi. `last_phone_number` hanya relevan untuk kurir `jne` (5 digit terakhir nomor telepon penerima pada beberapa skenario).
+
+Body fields:
+
+- courier (string, required)
+- waybill (string, required)
+- last_phone_number (string, optional; khusus jne)
+
+Contoh:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/track" \
+	-H "Content-Type: application/json" \
+	-d "{\n    \"courier\": \"jne\",\n    \"waybill\": \"ABCDEFG12345\",\n    \"last_phone_number\": \"12345\"\n  }"
+```
+
+## CORS
+
+Konfigurasi CORS tersedia di `config/cors.php`. Untuk konsumsi dari front-end lain domain, pastikan origin/headers/metode diizinkan sesuai kebutuhan.
+
+## Pengujian
+
+Jalankan test:
+
+```bat
+composer test
+```
+
+## Deployment singkat
+
+- Pastikan variabel `.env` terisi (APP_KEY, RAJAONGKIR_KEY, dsb.)
+- Aktifkan cache konfigurasi/route untuk performa:
+
+```bat
+php artisan config:cache
+php artisan route:cache
+```
+
+## Lisensi
+
+Proyek ini dirilis di bawah lisensi MIT. Lihat file [LICENSE](./LICENSE) untuk detail lengkapnya.
+
