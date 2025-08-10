@@ -25,7 +25,7 @@ class CostRequest extends FormRequest
             'origin'      => ['required','integer'],      // id district asal
             'destination' => ['required','integer'],      // id district tujuan (atau id yang disyaratkan Komerce)
             'weight'      => ['required','integer','min:1'],
-            'couriers'    => ['required','string'],       // comma-separated, ex: "jne,pos,tiki"
+            'courier'    => ['required','string'],       // colon-separated, ex: "jne:pos:tiki"
         ];
     }
 }

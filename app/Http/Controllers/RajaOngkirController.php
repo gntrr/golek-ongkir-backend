@@ -44,7 +44,7 @@ class RajaOngkirController extends Controller
         $origin      = (int)$r->input('origin');
         $destination = (int)$r->input('destination');
         $weight      = (int)$r->input('weight');
-        $couriers    = $r->input('couriers'); // "jne,pos,tiki"
+        $couriers    = $r->input('courier'); // "jne,pos,tiki"
 
         $key = "ko:cost:".md5("$origin|$destination|$weight|$couriers");
 

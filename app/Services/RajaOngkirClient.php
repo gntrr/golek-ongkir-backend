@@ -54,18 +54,33 @@ class RajaOngkirClient
     }
 
     // Calculate domestic
-    public function cost(int $origin, int $destination, int $weight, string $couriers) {
+    public function cost(int $origin, int $destination, int $weight, string $courier)
+    {
+        $url = "{$this->base}/calculate/district/domestic-cost"; // <-- perbaiki path
+
         $res = Http::asForm()
-            ->withHeaders($this->headers())
-            ->post("$this->base/calculate/domestic-cost", [
+            ->withHeaders(['key' => $this->key, 'Accept' => 'application/json'])
+            ->connectTimeout(5)         // waktu nunggu konek
+            ->timeout(20)               // total timeout
+            ->retry(2, 500)             // retry 2x jeda 500ms
+            ->withOptions([
+                'curl' => [
+                    CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4, // paksa IPv4
+                ],
+            ])
+            ->post($url, [
                 'origin'      => $origin,
                 'destination' => $destination,
                 'weight'      => $weight,
-                'couriers'    => $couriers, // "jne,pos,tiki"
+                'courier'     => $courier,      // pakai ':' untuk multi (jne:pos:jnt)
+                // 'price'    => 'lowest',      // opsional, kalau mau
             ]);
 
-        return $this->ok($res);
+        return $res->ok()
+            ? $res->json()
+            : ['error'=>true,'status'=>$res->status(),'message'=>$res->body()];
     }
+
 
     // Tracking (opsional)
     public function track(string $courier, string $waybill, ?string $lastPhone5 = null) {
