@@ -2,66 +2,66 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CitiesRequest;
-use App\Http\Requests\CostRequest;
-use App\Services\RajaOngkirClient;
-use Illuminate\Http\Request;
+use App\Http\Requests\{CitiesRequest, DistrictsRequest, SearchRequest, CostRequest};
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Http\JsonResponse;
 
 class RajaOngkirController extends Controller
 {
-    //
-    public function __construct(private RajaOngkirClient $client) {}
+    public function __construct(private \App\Services\RajaOngkirClient $client) {}
 
-    public function provinces(): JsonResponse
-    {
-        $data = Cache::remember('ro:provinces', now()->addDay(), function () {
-            return $this->client->provinces();
-        });
-
-        return response()->json($this->ok($data));
+    public function provinces() {
+        return response()->json(
+            Cache::remember('ko:provinces', now()->addDay(), fn() => $this->client->provinces())
+        );
     }
 
-    public function cities(CitiesRequest $req): JsonResponse
-    {
-        $province = $req->string('province')->toString();
-        $q        = $req->string('q')->toString();
-
-        $key = 'ro:cities:' . md5($province.'|'.$q);
-
-        $data = Cache::remember($key, now()->addDay(), function () use ($province, $q) {
-            $params = [];
-            if ($province !== '') $params['province'] = $province;
-            if ($q !== '')        $params['q']        = $q; // supported by your proxy doc
-            return $this->client->cities($params);
-        });
-
-        return response()->json($this->ok($data));
+    public function cities(CitiesRequest $r) {
+        $id = (int)$r->input('province');
+        return response()->json(
+            Cache::remember("ko:cities:$id", now()->addDay(), fn() => $this->client->cities($id))
+        );
     }
 
-    public function cost(CostRequest $req): JsonResponse
-    {
-        $origin      = $req->string('origin')->toString();
-        $destination = $req->string('destination')->toString();
-        $weight      = $req->integer('weight');
-        $courier     = $req->string('courier')->toString();
-
-        $key = 'ro:cost:' . md5("$origin|$destination|$weight|$courier");
-
-        $data = Cache::remember($key, now()->addMinutes(10), function () use ($origin, $destination, $weight, $courier) {
-            return $this->client->cost($origin, $destination, $weight, $courier);
-        });
-
-        return response()->json($this->ok($data));
+    public function districts(DistrictsRequest $r) {
+        $id = (int)$r->input('city');
+        return response()->json(
+            Cache::remember("ko:districts:$id", now()->addDay(), fn() => $this->client->districts($id))
+        );
     }
 
-    /** Normalisasi response sederhana */
-    private function ok($payload): array
-    {
-        return [
-            'success' => true,
-            'data'    => $payload['rajaongkir']['results'] ?? $payload['rajaongkir'] ?? $payload,
-        ];
+    public function search(SearchRequest $r) {
+        $term = $r->string('search')->toString();
+        $cacheKey = 'ko:search:'.md5($term);
+
+        $data = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($term) {
+            return $this->client->search($term);
+        });
+
+        return response()->json($data);
+    }
+
+    public function cost(CostRequest $r) {
+        $origin      = (int)$r->input('origin');
+        $destination = (int)$r->input('destination');
+        $weight      = (int)$r->input('weight');
+        $couriers    = $r->input('couriers'); // "jne,pos,tiki"
+
+        $key = "ko:cost:".md5("$origin|$destination|$weight|$couriers");
+
+        return response()->json(
+            Cache::remember($key, now()->addMinutes(10),
+                fn() => $this->client->cost($origin,$destination,$weight,$couriers)
+            )
+        );
+    }
+
+    public function track(Request $r) {
+        return response()->json(
+            $this->client->track(
+                $r->string('courier'),
+                $r->string('waybill'),
+                $r->string('last_phone_number', null)
+            )
+        );
     }
 }

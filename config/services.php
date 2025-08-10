@@ -36,8 +36,10 @@ return [
     ],
 
     'rajaongkir' => [
-        'base' => env('RAJAONGKIR_BASE', 'https://api.rajaongkir.com/starter'),
+        'base' => env('RAJAONGKIR_BASE', 'https://rajaongkir.komerce.id/api/v1'),
         'key'  => env('RAJAONGKIR_KEY'),
+        // 'auth_header' => env('RAJAONGKIR_AUTH_HEADER', 'Authorization'),
+        // 'auth_scheme' => env('RAJAONGKIR_AUTH_SCHEME', 'Bearer'),
     ],
 
 ];

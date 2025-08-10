@@ -11,7 +11,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // binding untuk RajaOngkirClient
+         $this->app->singleton(\App\Services\RajaOngkirClient::class, function ($app) {
+            return new \App\Services\RajaOngkirClient();
+        });
     }
 
     /**

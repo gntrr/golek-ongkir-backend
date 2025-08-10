@@ -22,10 +22,10 @@ class CostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'origin'      => ['required','string'],
-            'destination' => ['required','string'],
+            'origin'      => ['required','integer'],      // id district asal
+            'destination' => ['required','integer'],      // id district tujuan (atau id yang disyaratkan Komerce)
             'weight'      => ['required','integer','min:1'],
-            'courier'     => ['required','in:jne,pos,tiki'],
+            'couriers'    => ['required','string'],       // comma-separated, ex: "jne,pos,tiki"
         ];
     }
 }

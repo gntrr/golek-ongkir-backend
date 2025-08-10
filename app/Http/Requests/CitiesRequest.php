@@ -21,9 +21,9 @@ class CitiesRequest extends FormRequest
      */
     public function rules(): array
     {
+        // province_id dari UI (number), wajib & integer
         return [
-            'province' => ['sometimes','string'],
-            'q'        => ['sometimes','string','min:2'],
+            'province' => ['required', 'integer'],
         ];
     }
 }
