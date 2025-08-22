@@ -194,6 +194,8 @@ Body fields:
 - waybill (string, required)
 - last_phone_number (string, optional; khusus jne)
 
+ Catatan: Respons endpoint ini mengembalikan langsung bagian `data` dari upstream (tanpa `meta`) agar lebih mudah dikonsumsi di klien.
+
 Contoh:
 
 ```bash

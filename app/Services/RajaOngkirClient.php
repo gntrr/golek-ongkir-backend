@@ -151,7 +151,8 @@ class RajaOngkirClient
 
     // Tracking (opsional)
     public function track(string $courier, string $waybill, ?string $lastPhone5 = null) {
-        $payload = ['courier'=>$courier, 'waybill'=>$waybill];
+    // Kirim kedua field (waybill & awb) untuk kompatibilitas dengan variasi upstream
+    $payload = ['courier'=>$courier, 'waybill'=>$waybill, 'awb'=>$waybill];
         if ($courier === 'jne' && $lastPhone5) $payload['last_phone_number'] = $lastPhone5;
 
         $res = $this->withFailover(fn($key) =>
@@ -159,6 +160,12 @@ class RajaOngkirClient
                 ->post("$this->base/track/waybill", $payload)
         );
 
-        return $this->ok($res);
+        if ($res->ok()) {
+            $json = $res->json();
+            // Kembalikan langsung objek 'data' (tanpa 'meta') sesuai permintaan
+            return is_array($json) && array_key_exists('data', $json) ? $json['data'] : $json;
+        }
+
+        return ['error'=>true,'status'=>$res->status(),'message'=>$res->json('message') ?? $res->body()];
     }
 }

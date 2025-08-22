@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\{CitiesRequest, DistrictsRequest, SearchRequest, CostRequest};
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\Request;
 
 class RajaOngkirController extends Controller
 {
@@ -56,12 +57,12 @@ class RajaOngkirController extends Controller
     }
 
     public function track(Request $r) {
+        $courier = (string) $r->input('courier');
+        $waybill = (string) ($r->input('waybill') ?? $r->input('awb'));
+        $last5   = $r->input('last_phone_number'); // optional, khusus jne
+
         return response()->json(
-            $this->client->track(
-                $r->string('courier'),
-                $r->string('waybill'),
-                $r->string('last_phone_number', null)
-            )
+            $this->client->track($courier, $waybill, $last5)
         );
     }
 }
