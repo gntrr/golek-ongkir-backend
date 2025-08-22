@@ -44,12 +44,41 @@ Catatan: Proyek menyertakan SQLite untuk kebutuhan dasar Laravel, tetapi modul A
 
 Setel variabel berikut di file `.env`:
 
-- RAJAONGKIR_KEY: kunci API provider upstream (wajib)
+- RAJAONGKIR_KEY: kunci API provider upstream (opsional jika memakai RAJAONGKIR_KEYS)
+- RAJAONGKIR_KEYS: daftar beberapa key dipisah koma untuk failover. Contoh: `key_utama,key_cadangan`
 - RAJAONGKIR_BASE: base URL upstream (opsional, default `https://rajaongkir.komerce.id/api/v1`)
 
 Opsional terkait performa:
 
 - CACHE_DRIVER=file|redis|… (default file). Data tertentu di-cache: provinces (1 hari), cities (1 hari), districts (1 hari), search (30 menit), cost (10 menit).
+
+### Redis (disarankan untuk production)
+
+Untuk performa dan skalabilitas, gunakan Redis sebagai cache store:
+
+```env
+# Cache pakai Redis
+CACHE_DRIVER=redis
+CACHE_PREFIX=golek_ongkir
+
+# Client Redis: phpredis (ekstensi PHP) atau predis (library composer)
+REDIS_CLIENT=phpredis
+
+# Koneksi Redis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_USERNAME=your_username
+REDIS_PASSWORD=your_password
+REDIS_DB=0
+REDIS_CACHE_DB=1
+
+# Prefix kunci untuk hindari tabrakan lintas aplikasi
+REDIS_PREFIX=golek_ongkir_
+```
+
+Catatan:
+- Gunakan Redis yang sama lintas instance agar cache dan status failover key konsisten.
+- Jika memakai `predis/predis`, set `REDIS_CLIENT=predis` dan jalankan `composer require predis/predis`.
 
 ## Kontrak respons
 
@@ -77,6 +106,8 @@ Kesalahan validasi dari API ini mengikuti standar Laravel (HTTP 422) dengan payl
 ## Rate limiting
 
 Semua rute berada di belakang throttle `60,1` (maksimal 60 request per menit per IP). Jika terlampaui akan menerima HTTP 429.
+
+Upstream API juga memiliki limit harian. Layanan ini mendukung failover multi-key: ketika satu key menerima respons rate limit (429/kuota habis), sistem akan menandai key tersebut sementara (default 12 jam) dan mencoba key berikutnya secara otomatis. Atur `RAJAONGKIR_KEYS` untuk mengaktifkan fitur ini.
 
 ## API Reference
 

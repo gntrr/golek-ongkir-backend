@@ -37,7 +37,8 @@ return [
 
     'rajaongkir' => [
         'base' => env('RAJAONGKIR_BASE', 'https://rajaongkir.komerce.id/api/v1'),
-        'key'  => env('RAJAONGKIR_KEY'),
+        'key'  => env('RAJAONGKIR_KEY'),        // single key (backward compatible)
+        'keys' => env('RAJAONGKIR_KEYS'),       // comma-separated keys for failover, e.g. "key1,key2"
         // 'auth_header' => env('RAJAONGKIR_AUTH_HEADER', 'Authorization'),
         // 'auth_scheme' => env('RAJAONGKIR_AUTH_SCHEME', 'Bearer'),
     ],
